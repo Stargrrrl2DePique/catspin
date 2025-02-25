@@ -22,25 +22,27 @@
       height: 300px;
     }
     
-    /* Spinning cat image */
+    /* Spinning cat image (place it above confetti with z-index) */
     #spinningCat {
       width: 300px;
       height: 300px;
-      position: absolute;
+      position: relative; /* important for z-index */
       top: 0;
       left: 0;
       cursor: pointer;
       animation: spinClockwise 3s linear infinite;
       transform-origin: center center;
+      z-index: 2; /* ensures it's above the confetti */
     }
 
-    /* Confetti styling (no CSS animation for these; we'll move them via JavaScript) */
+    /* Confetti styling (behind the cat, z-index: 1) */
     .confetti {
       position: absolute;
       width: 10px;
       height: 10px;
       border-radius: 50%;
       opacity: 0.8;
+      z-index: 1;
     }
     
     /* Keyframes for spinning animations */
@@ -98,14 +100,25 @@
     /* Flying Nyan cats */
     .nyanCat {
       position: fixed;
-      width: 100px;
+      width: 150px; /* BIG CHONK */
       height: auto;
       pointer-events: none;
-      animation: fly 5s linear infinite;
+      animation: fly 5s linear infinite; /* 5s flight */
     }
     @keyframes fly {
       0%   { transform: translate(-50px, 100vh); }
       100% { transform: translate(120vw, -100vh); }
+    }
+
+    /* Small, unobtrusive click counter */
+    #clickCounter {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 14px;
+      color: #333;
+      opacity: 0.4; /* subtle so it doesn't bother you */
+      font-family: sans-serif;
     }
   </style>
 </head>
@@ -119,12 +132,18 @@
     />
   </div>
   
+  <!-- Subtle click counter, out of the way -->
+  <div id="clickCounter"></div>
+  
   <div id="overloadText">NYAN CAT OVERLOAD</div>
 
   <script>
     var cat = document.getElementById('spinningCat');
     var body = document.body;
     var currentDirection = 'Clockwise';
+    
+    var clickCounter = 0; 
+    var clickCounterDiv = document.getElementById('clickCounter');
     
     /* We'll store active confetti objects here */
     var confettiArray = [];
@@ -139,8 +158,11 @@
       updateConfetti();
     }, 16); // ~60 FPS
 
-    /* Cat click handling: switch spin direction, random color, chance of overload */
+    /* Cat click handling: switch spin direction, random color, chance of overload, increment counter */
     cat.addEventListener('click', function() {
+      clickCounter++;
+      clickCounterDiv.textContent = 'Clicks: ' + clickCounter; 
+      
       if (currentDirection === 'Clockwise') {
         cat.style.animation = 'spinCounterClockwise 3s linear infinite';
         currentDirection = 'CounterClockwise';
@@ -151,8 +173,8 @@
       
       body.style.backgroundColor = getRandomColor();
       
-      /* 20% chance to trigger the overload */
-      if (Math.random() < 0.2) {
+      /* 10% chance to trigger the overload */
+      if (Math.random() < 0.1) {
         triggerOverload();
       }
     });
@@ -179,7 +201,7 @@
         }, 5000);
       }, 300);
 
-      /* End the overload after 10 seconds */
+      /* End the overload after 5 seconds */
       setTimeout(function() {
         overloadText.style.display = 'none';
         body.style.animation = 'none';
@@ -226,7 +248,6 @@
 
     /* Moves and removes confetti as needed */
     function updateConfetti() {
-      var container = document.querySelector('.container');
       var now = Date.now();
       
       for (var i = confettiArray.length - 1; i >= 0; i--) {
@@ -261,4 +282,3 @@
   </script>
 </body>
 </html>
-
