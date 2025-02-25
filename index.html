@@ -54,6 +54,15 @@
       0%   { transform: rotate(0deg); }
       100% { transform: rotate(-360deg); }
     }
+
+    /* Violent shake animation */
+    @keyframes violentShake {
+      0%   { transform: translate(0, 0) rotate(0deg); }
+      25%  { transform: translate(3px, 3px) rotate(1deg); }
+      50%  { transform: translate(-3px, -3px) rotate(-1deg); }
+      75%  { transform: translate(3px, -3px) rotate(1deg); }
+      100% { transform: translate(-3px, 3px) rotate(-1deg); }
+    }
     
     /* Rainbow strobe for overload */
     @keyframes strobe {
@@ -138,6 +147,10 @@
   <div id="overloadText">NYAN CAT OVERLOAD</div>
 
   <script>
+    // Store the original cat image & spin
+    var originalCatSrc = 'https://i.imgur.com/sKJytE3.png';
+    var overloadCatSrc = 'https://imgur.com/aPc8ra8.png'; // Overload cat image
+
     var cat = document.getElementById('spinningCat');
     var body = document.body;
     var currentDirection = 'Clockwise';
@@ -147,7 +160,8 @@
     
     /* We'll store active confetti objects here */
     var confettiArray = [];
-    
+    var overloadActive = false; // To mark if overload is active or not
+
     /* Spawn confetti continuously from the cat's center in random directions */
     setInterval(function() {
       spawnConfetti();
@@ -163,29 +177,45 @@
       clickCounter++;
       clickCounterDiv.textContent = 'Clicks: ' + clickCounter; 
       
-      if (currentDirection === 'Clockwise') {
-        cat.style.animation = 'spinCounterClockwise 3s linear infinite';
-        currentDirection = 'CounterClockwise';
-      } else {
-        cat.style.animation = 'spinClockwise 3s linear infinite';
-        currentDirection = 'Clockwise';
+      // Only switch spin if not in overload
+      if (!overloadActive) {
+        if (currentDirection === 'Clockwise') {
+          cat.style.animation = 'spinCounterClockwise 3s linear infinite';
+          currentDirection = 'CounterClockwise';
+        } else {
+          cat.style.animation = 'spinClockwise 3s linear infinite';
+          currentDirection = 'Clockwise';
+        }
+        body.style.backgroundColor = getRandomColor();
       }
       
-      body.style.backgroundColor = getRandomColor();
-      
-      /* 10% chance to trigger the overload */
-      if (Math.random() < 0.1) {
+      /* 10% chance to trigger the overload (only if not already active) */
+      if (!overloadActive && Math.random() < 0.1) {
         triggerOverload();
       }
     });
 
-    /* Overload sequence with rainbow strobe, flying Nyan cats, and text */
+    /* Overload sequence:
+       1) Cat changes to new image, stops spinning, shakes violently.
+       2) All confetti becomes red, more is spawned.
+       3) Body strobe.
+       4) Big Nyan cat festival.
+       5) Revert after 5 seconds.
+    */
     function triggerOverload() {
+      overloadActive = true;
+
       var overloadText = document.getElementById('overloadText');
       overloadText.style.display = 'block';
       
+      // Make background strobe
       body.style.animation = 'strobe 0.5s infinite';
+
+      // Change cat image & make it shake violently
+      cat.src = overloadCatSrc;
+      cat.style.animation = 'violentShake 0.1s infinite';
       
+      // Create more Nyan cats flying around
       var nyanInterval = setInterval(function() {
         var nyan = document.createElement('img');
         nyan.src = 'https://i.imgur.com/7BapRXO.png';
@@ -201,15 +231,25 @@
         }, 5000);
       }, 300);
 
-      /* End the overload after 5 seconds */
+      // After 5 seconds, revert back
       setTimeout(function() {
         overloadText.style.display = 'none';
         body.style.animation = 'none';
+        
+        // Revert the cat's image & spin
+        cat.src = originalCatSrc;
+        if (currentDirection === 'Clockwise') {
+          cat.style.animation = 'spinClockwise 3s linear infinite';
+        } else {
+          cat.style.animation = 'spinCounterClockwise 3s linear infinite';
+        }
+        
         clearInterval(nyanInterval);
+        overloadActive = false;
       }, 5000);
     }
 
-    /* Spawns a single confetti piece at the cat's center with a random direction & color */
+    /* Spawns a single confetti piece at the cat's center with a random direction & color (or red if in overload) */
     function spawnConfetti() {
       var container = document.querySelector('.container');
       var conf = document.createElement('div');
@@ -219,31 +259,37 @@
       var startX = 150;
       var startY = 150;
       
-      /* Random velocity and angle */
-      var angle = Math.random() * 2 * Math.PI; // 0 to 2π
-      var speed = 2 + Math.random() * 4;      // random speed between 2 and 6
-      var dx = Math.cos(angle) * speed;
-      var dy = Math.sin(angle) * speed;
-      
-      /* Random color */
-      conf.style.backgroundColor = getRandomColor();
+      /* If overload is active, spawn more confetti at once */
+      var spawnMultiplier = overloadActive ? 5 : 1; // 5x confetti while overloaded
+      for (var i = 0; i < spawnMultiplier; i++) {
+        var confClone = conf.cloneNode(true);
 
-      /* Assign initial position */
-      conf.style.left = startX + 'px';
-      conf.style.top = startY + 'px';
+        /* Random velocity and angle */
+        var angle = Math.random() * 2 * Math.PI; // 0 to 2π
+        var speed = 2 + Math.random() * 4;      // random speed between 2 and 6
+        var dx = Math.cos(angle) * speed;
+        var dy = Math.sin(angle) * speed;
+        
+        /* If overload is active, all confetti is red; otherwise random color */
+        confClone.style.backgroundColor = overloadActive ? 'red' : getRandomColor();
 
-      /* We'll store movement data in a custom object */
-      var confObj = {
-        element: conf,
-        x: startX,
-        y: startY,
-        dx: dx,
-        dy: dy,
-        startTime: Date.now()  // to remove after a certain time
-      };
+        /* Assign initial position */
+        confClone.style.left = startX + 'px';
+        confClone.style.top = startY + 'px';
 
-      confettiArray.push(confObj);
-      container.appendChild(conf);
+        /* We'll store movement data in a custom object */
+        var confObj = {
+          element: confClone,
+          x: startX,
+          y: startY,
+          dx: dx,
+          dy: dy,
+          startTime: Date.now()
+        };
+
+        confettiArray.push(confObj);
+        container.appendChild(confClone);
+      }
     }
 
     /* Moves and removes confetti as needed */
