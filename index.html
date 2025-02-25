@@ -2,9 +2,9 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Spinning Cat with Confetti</title>
+  <title>Spinning Cat with Exploding Confetti</title>
   <style>
-    /* Basic poo */
+    /* Basic styling for the page */
     body {
       margin: 0;
       padding: 0;
@@ -22,7 +22,7 @@
       height: 300px;
     }
     
-    /* The cat image */
+    /* Spinning cat image */
     #spinningCat {
       width: 300px;
       height: 300px;
@@ -34,13 +34,12 @@
       transform-origin: center center;
     }
 
-    /* Confetti styling */
+    /* Confetti styling (no CSS animation for these; we'll move them via JavaScript) */
     .confetti {
       position: absolute;
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      animation: fall 3s linear infinite;
       opacity: 0.8;
     }
     
@@ -54,12 +53,6 @@
       100% { transform: rotate(-360deg); }
     }
     
-    /* Confetti falling animation */
-    @keyframes fall {
-      0%   { transform: translateY(-50px); }
-      100% { transform: translateY(600px); }
-    }
-
     /* Rainbow strobe for overload */
     @keyframes strobe {
       0%   { background-color: red; }
@@ -85,7 +78,6 @@
       display: none;
       animation: shake 0.3s infinite, colorChange 1s infinite;
     }
-
     /* Text shakes */
     @keyframes shake {
       0%   { transform: translate(0, 0); }
@@ -94,7 +86,6 @@
       75%  { transform: translate(2px, -2px); }
       100% { transform: translate(-2px, 2px); }
     }
-
     /* Text color changes */
     @keyframes colorChange {
       0%   { color: red; }
@@ -112,8 +103,6 @@
       pointer-events: none;
       animation: fly 5s linear infinite;
     }
-
-    /* Move them diagonally */
     @keyframes fly {
       0%   { transform: translate(-50px, 100vh); }
       100% { transform: translate(120vw, -100vh); }
@@ -136,40 +125,21 @@
     var cat = document.getElementById('spinningCat');
     var body = document.body;
     var currentDirection = 'Clockwise';
-
-    /* Function to get a random color for confetti */
-    function getRandomColor() {
-      var colors = ['#FF5F5F', '#FFA45F', '#FFDA5F', '#5FFF72', '#5FF7FF', '#AD5FFF', '#FF5FF7'];
-      return colors[Math.floor(Math.random() * colors.length)];
-    }
-
-    /* Continuously spawn confetti at the cat's head */
+    
+    /* We'll store active confetti objects here */
+    var confettiArray = [];
+    
+    /* Spawn confetti continuously from the cat's center in random directions */
     setInterval(function() {
-      var conf = document.createElement('div');
-      conf.classList.add('confetti');
-      conf.style.backgroundColor = getRandomColor();
+      spawnConfetti();
+    }, 100); // Every 0.1s
 
-      /*
-        We'll place the confetti near the top center of the cat.
-        The container is 300x300, so let's guess the cat's head is around x=145 to 155, y=20.
-      */
-      var container = document.querySelector('.container');
-      conf.style.left = (145 + Math.random() * 10) + 'px';
-      conf.style.top = '20px';
-      
-      container.appendChild(conf);
+    /* Animation loop for confetti updates (move them, remove them if needed) */
+    setInterval(function() {
+      updateConfetti();
+    }, 16); // ~60 FPS
 
-      /*
-        Each confetti disappears after 3 seconds (the duration of the fall animation).
-      */
-      setTimeout(function() {
-        if (conf.parentNode) {
-          conf.parentNode.removeChild(conf);
-        }
-      }, 3000);
-    }, 100); // spawn confetti every 0.1s
-
-    /* Switch spin direction and random chance of overload on click */
+    /* Cat click handling: switch spin direction, random color, chance of overload */
     cat.addEventListener('click', function() {
       if (currentDirection === 'Clockwise') {
         cat.style.animation = 'spinCounterClockwise 3s linear infinite';
@@ -181,12 +151,13 @@
       
       body.style.backgroundColor = getRandomColor();
       
+      /* 20% chance to trigger the overload */
       if (Math.random() < 0.2) {
         triggerOverload();
       }
     });
-    
-    /* Overload sequence with rainbow strobe, Nyan cats, and text */
+
+    /* Overload sequence with rainbow strobe, flying Nyan cats, and text */
     function triggerOverload() {
       var overloadText = document.getElementById('overloadText');
       overloadText.style.display = 'block';
@@ -215,6 +186,79 @@
         clearInterval(nyanInterval);
       }, 10000);
     }
+
+    /* Spawns a single confetti piece at the cat's center with a random direction & color */
+    function spawnConfetti() {
+      var container = document.querySelector('.container');
+      var conf = document.createElement('div');
+      conf.classList.add('confetti');
+
+      /* Position at the center of the cat (about 150,150 in a 300x300 container) */
+      var startX = 150;
+      var startY = 150;
+      
+      /* Random velocity and angle */
+      var angle = Math.random() * 2 * Math.PI; // 0 to 2π
+      var speed = 2 + Math.random() * 4;      // random speed between 2 and 6
+      var dx = Math.cos(angle) * speed;
+      var dy = Math.sin(angle) * speed;
+      
+      /* Random color */
+      conf.style.backgroundColor = getRandomColor();
+
+      /* Assign initial position */
+      conf.style.left = startX + 'px';
+      conf.style.top = startY + 'px';
+
+      /* We'll store movement data in a custom object */
+      var confObj = {
+        element: conf,
+        x: startX,
+        y: startY,
+        dx: dx,
+        dy: dy,
+        startTime: Date.now()  // to remove after a certain time
+      };
+
+      confettiArray.push(confObj);
+      container.appendChild(conf);
+    }
+
+    /* Moves and removes confetti as needed */
+    function updateConfetti() {
+      var container = document.querySelector('.container');
+      var now = Date.now();
+      
+      for (var i = confettiArray.length - 1; i >= 0; i--) {
+        var confObj = confettiArray[i];
+        
+        /* Move confetti */
+        confObj.x += confObj.dx;
+        confObj.y += confObj.dy;
+        
+        confObj.element.style.left = confObj.x + 'px';
+        confObj.element.style.top = confObj.y + 'px';
+        
+        /* Remove confetti if it has existed for more than 2 seconds or gone out of container bounds */
+        if (
+          now - confObj.startTime > 2000 ||
+          confObj.x < -50 || confObj.x > 350 ||
+          confObj.y < -50 || confObj.y > 350
+        ) {
+          if (confObj.element.parentNode) {
+            confObj.element.parentNode.removeChild(confObj.element);
+          }
+          confettiArray.splice(i, 1);
+        }
+      }
+    }
+
+    /* Returns a random color for confetti */
+    function getRandomColor() {
+      var colors = ['#FF5F5F', '#FFA45F', '#FFDA5F', '#5FFF72', '#5FF7FF', '#AD5FFF', '#FF5FF7'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
   </script>
 </body>
 </html>
+
