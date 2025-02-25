@@ -1,8 +1,10 @@
+<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <title>Spinning Cat with Confetti</title>
   <style>
+    /* Basic styling */
     body {
       margin: 0;
       padding: 0;
@@ -14,13 +16,13 @@
       height: 100vh;
       transition: background-color 0.5s;
     }
-    
     .container {
       position: relative;
       width: 300px;
       height: 300px;
     }
     
+    /* The cat image */
     #spinningCat {
       width: 300px;
       height: 300px;
@@ -32,6 +34,7 @@
       transform-origin: center center;
     }
 
+    /* Confetti styling */
     .confetti {
       position: absolute;
       width: 10px;
@@ -41,25 +44,23 @@
       opacity: 0.8;
     }
     
+    /* Keyframes for spinning animations */
     @keyframes spinClockwise {
       0%   { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    
     @keyframes spinCounterClockwise {
       0%   { transform: rotate(0deg); }
       100% { transform: rotate(-360deg); }
     }
     
+    /* Confetti falling animation */
     @keyframes fall {
-      0% {
-        transform: translateY(-50px);
-      }
-      100% {
-        transform: translateY(600px);
-      }
+      0%   { transform: translateY(-50px); }
+      100% { transform: translateY(600px); }
     }
 
+    /* Rainbow strobe for overload */
     @keyframes strobe {
       0%   { background-color: red; }
       14%  { background-color: orange; }
@@ -71,6 +72,7 @@
       100% { background-color: red; }
     }
 
+    /* Overload text */
     #overloadText {
       position: fixed;
       top: 20%;
@@ -84,6 +86,7 @@
       animation: shake 0.3s infinite, colorChange 1s infinite;
     }
 
+    /* Text shakes */
     @keyframes shake {
       0%   { transform: translate(0, 0); }
       25%  { transform: translate(2px, 2px); }
@@ -92,6 +95,7 @@
       100% { transform: translate(-2px, 2px); }
     }
 
+    /* Text color changes */
     @keyframes colorChange {
       0%   { color: red; }
       25%  { color: green; }
@@ -100,6 +104,7 @@
       100% { color: pink; }
     }
 
+    /* Flying Nyan cats */
     .nyanCat {
       position: fixed;
       width: 100px;
@@ -108,6 +113,7 @@
       animation: fly 5s linear infinite;
     }
 
+    /* Move them diagonally */
     @keyframes fly {
       0%   { transform: translate(-50px, 100vh); }
       100% { transform: translate(120vw, -100vh); }
@@ -116,9 +122,10 @@
 </head>
 <body>
   <div class="container">
+    <!-- Updated main cat image -->
     <img 
       id="spinningCat" 
-      src="https://png.pngtree.com/png-vector/20201227/ourmid/pngtree-surprised-shorthair-cat-expression-png-image_2654463.jpg" 
+      src="https://imgur.com/ttFZE7a.png" 
       alt="Spinning Cat"
     />
   </div>
@@ -129,40 +136,40 @@
     var cat = document.getElementById('spinningCat');
     var body = document.body;
     var currentDirection = 'Clockwise';
-    
-    var confettiCount = 30;
-    var container = document.querySelector('.container');
-    
-    for (var i = 0; i < confettiCount; i++) {
-      var conf = document.createElement('div');
-      conf.classList.add('confetti');
-      resetConfetti(conf);
-      container.appendChild(conf);
-    }
-    
-    function resetConfetti(conf) {
-      conf.style.left = Math.random() * 280 + 'px';
-      conf.style.top = -Math.random() * 50 + 'px';
-      conf.style.backgroundColor = getRandomColor();
-    }
 
+    /* Function to get a random color for confetti */
     function getRandomColor() {
       var colors = ['#FF5F5F', '#FFA45F', '#FFDA5F', '#5FFF72', '#5FF7FF', '#AD5FFF', '#FF5FF7'];
       return colors[Math.floor(Math.random() * colors.length)];
     }
-    
+
+    /* Continuously spawn confetti at the cat's head */
     setInterval(function() {
-      var confettis = document.getElementsByClassName('confetti');
-      for (var c = 0; c < confettis.length; c++) {
-        var topVal = parseFloat(confettis[c].style.top);
-        if (topVal > 300) {
-          resetConfetti(confettis[c]);
-        } else {
-          confettis[c].style.top = (topVal + 5) + 'px';
+      var conf = document.createElement('div');
+      conf.classList.add('confetti');
+      conf.style.backgroundColor = getRandomColor();
+
+      /*
+        We'll place the confetti near the top center of the cat.
+        The container is 300x300, so let's guess the cat's head is around x=145 to 155, y=20.
+      */
+      var container = document.querySelector('.container');
+      conf.style.left = (145 + Math.random() * 10) + 'px';
+      conf.style.top = '20px';
+      
+      container.appendChild(conf);
+
+      /*
+        Each confetti disappears after 3 seconds (the duration of the fall animation).
+      */
+      setTimeout(function() {
+        if (conf.parentNode) {
+          conf.parentNode.removeChild(conf);
         }
-      }
-    }, 50);
-    
+      }, 3000);
+    }, 100); // spawn confetti every 0.1s
+
+    /* Switch spin direction and random chance of overload on click */
     cat.addEventListener('click', function() {
       if (currentDirection === 'Clockwise') {
         cat.style.animation = 'spinCounterClockwise 3s linear infinite';
@@ -174,16 +181,12 @@
       
       body.style.backgroundColor = getRandomColor();
       
-      var confettis = document.getElementsByClassName('confetti');
-      for (var c = 0; c < confettis.length; c++) {
-        confettis[c].style.backgroundColor = getRandomColor();
-      }
-      
       if (Math.random() < 0.2) {
         triggerOverload();
       }
     });
     
+    /* Overload sequence with rainbow strobe, Nyan cats, and text */
     function triggerOverload() {
       var overloadText = document.getElementById('overloadText');
       overloadText.style.display = 'block';
@@ -192,7 +195,7 @@
       
       var nyanInterval = setInterval(function() {
         var nyan = document.createElement('img');
-        nyan.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRncXl8RARQR7O9e_Rq-CqZYt5IASPOvuz1jw&s';
+        nyan.src = 'https://imgur.com/JSSF6Ax.png';
         nyan.classList.add('nyanCat');
         nyan.style.left = '-50px';
         nyan.style.top = Math.random() * window.innerHeight + 'px';
@@ -205,6 +208,7 @@
         }, 5000);
       }, 300);
 
+      /* End the overload after 10 seconds */
       setTimeout(function() {
         overloadText.style.display = 'none';
         body.style.animation = 'none';
